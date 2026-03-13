@@ -1,0 +1,50 @@
+# ─────────────────────────────────────────────────────────────
+# Phishing Detector — Backend Requirements
+# Install with: pip install -r requirements.txt
+# Python 3.9+ recommended
+# ─────────────────────────────────────────────────────────────
+
+# ── Web Framework ─────────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.29.0        # ASGI server to run FastAPI
+pydantic==2.7.1                  # request/response validation
+
+# ── NLP Core ──────────────────────────────────────────────────
+transformers==4.41.0             # DistilBERT, BERT, tokenizers
+torch==2.3.0                     # PyTorch — runs the BERT model
+tokenizers==0.19.1               # fast tokenizer (used by transformers)
+
+# ── Classical NLP ─────────────────────────────────────────────
+nltk==3.8.1                      # tokenization, stopwords, lemmatization
+scikit-learn==1.4.2              # TF-IDF, Logistic Regression baseline
+scipy==1.13.0                    # sparse matrix ops for TF-IDF + URL features
+
+# ── Named Entity Recognition ──────────────────────────────────
+spacy==3.7.4                     # NER for brand spoofing detection
+# After install, also run:
+# python -m spacy download en_core_web_sm
+
+# ── URL Feature Extraction ────────────────────────────────────
+tldextract==5.1.2                # reliable TLD/domain parsing
+requests==2.31.0                 # optional: check URL reachability
+
+# ── Data Handling ─────────────────────────────────────────────
+pandas==2.2.2                    # dataset loading and manipulation
+numpy==1.26.4                    # numerical ops
+
+# ── Model Training (fine-tuning DistilBERT) ───────────────────
+datasets==2.19.1                 # HuggingFace datasets (SpamAssassin etc.)
+evaluate==0.4.2                  # compute accuracy, F1 during training
+accelerate==0.30.1               # faster training, multi-GPU support
+
+# ── Sentence Embeddings (semantic similarity) ─────────────────
+sentence-transformers==3.0.0    # all-MiniLM-L6-v2 for similarity scoring
+
+# ── CORS + HTTP ───────────────────────────────────────────────
+httpx==0.27.0                    # async HTTP client (used internally)
+python-multipart==0.0.9          # multipart form support for FastAPI
+
+# ── Utilities ─────────────────────────────────────────────────
+python-dotenv==1.0.1             # load .env config (API keys, settings)
+loguru==0.7.2                    # clean logging
+tqdm==4.66.4                     # progress bars during training
