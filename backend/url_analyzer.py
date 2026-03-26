@@ -410,7 +410,7 @@ def get_url_flags(url_list: List[str]) -> List[str]:
     seen  = set()
 
     for r in results:
-        if r["risk_score"] > 0:
+        if r["risk_score"] > 3:
             for reason in r["risk_reasons"]:
                 if reason not in seen:
                     flags.append(reason)
