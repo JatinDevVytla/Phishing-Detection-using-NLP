@@ -1,47 +1,76 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
-from preprocessor import preprocess, urgency_score, check_brand_spoofing
-from url_analyzer import extract_url_features
+from preprocessor import preprocess, urgency_score, get_manipulation_flags, get_spoofing_flags
+from url_analyzer import get_url_flags
+
+MODEL_PATH = "./trained_model"
 
 class PhishingModel:
     def __init__(self):
-        self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
-        self.model = AutoModelForSequenceClassification.from_pretrained(
-            "./trained_model"  # your fine-tuned model
-        )
+        print(f"Loading tokenizer and model from {MODEL_PATH}...")
+
+        # Load both tokenizer and model from local trained_model folder
+        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+        self.model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH)
         self.model.eval()
 
-    def predict(self, text, sender, urls):
-        # 1. Preprocess
+        # Use GPU if available, otherwise CPU
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(self.device)
+
+        print(f"Model loaded on {self.device}")
+
+    def predict(self, text: str, sender: str, urls: list) -> dict:
+
+        # ── Step 1: Preprocess ────────────────────────────────────────────────
         cleaned = preprocess(text)
 
-        # 2. BERT prediction
+        # ── Step 2: DistilBERT classification ────────────────────────────────
         inputs = self.tokenizer(
-            cleaned, return_tensors="pt",
-            truncation=True, max_length=512
+            cleaned,
+            return_tensors="pt",
+            truncation=True,
+            max_length=256,
+            padding=True
         )
+
+        # DistilBERT does NOT use token_type_ids — remove if tokenizer added it
+        inputs.pop("token_type_ids", None)
+
+        # Move to same device as model
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
         with torch.no_grad():
             logits = self.model(**inputs).logits
 
-        confidence = torch.softmax(logits, dim=1)[0][1].item()
-        label = "PHISHING" if confidence > 0.5 else "LEGIT"
+        probs      = torch.softmax(logits, dim=1)[0]
+        confidence = probs[1].item()
+        label      = "PHISHING" if confidence > 0.5 else "LEGIT"
 
-        # 3. Build human-readable reasons
+        # ── Step 3: Build human-readable reasons ─────────────────────────────
         reasons = []
-        if urgency_score(text) > 0.3:
-            reasons.append("⚠️ Urgency/fear language detected")
 
-        spoofing = check_brand_spoofing(text, sender)
-        if spoofing:
-            reasons.append(f"🎭 Impersonates {spoofing[0]['brand']}")
+        # urgency_score() returns a dict of per-category scores.
+        # Flag if ANY category has at least one hit (score > 0),
+        # not just if the overall average clears a threshold.
+        urgency = urgency_score(text)
+        has_urgency = any(
+            score > 0
+            for key, score in urgency.items()
+            if key != "overall"
+        )
+        if has_urgency:
+            reasons.extend(get_manipulation_flags(text))
 
-        for url in urls:
-            url_risk = extract_url_features(url)
-            if url_risk["risk_score"] > 5:
-                reasons.append(f"🔗 Suspicious URL: {url[:40]}...")
+        # Brand spoofing via NER
+        reasons.extend(get_spoofing_flags(text, sender))
+
+        # URL risk
+        if urls:
+            reasons.extend(get_url_flags(urls))
 
         return {
-            "label": label,
-            "confidence": confidence,
-            "reasons": reasons
+            "label":      label,
+            "confidence": round(confidence, 4),
+            "reasons":    reasons
         }
