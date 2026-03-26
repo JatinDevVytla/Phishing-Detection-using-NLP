@@ -33,8 +33,13 @@ phishing-extension/
     ├── model.py                # DistilBERT inference pipeline
     ├── preprocessor.py         # Text cleaning, urgency scoring, NER
     ├── url_analyzer.py         # URL feature extraction and risk scoring
-    ├── train.py          # Model training script
-    └── requirements.txt        # Python dependencies
+    ├── requirements.txt        # Python dependencies
+    └── trained_model/
+        ├── main.py                 # FastAPI app, /analyze and /health endpoints
+        ├── model.py                # DistilBERT inference pipeline
+        ├── preprocessor.py         # Text cleaning, urgency scoring, NER
+        ├── url_analyzer.py         # URL feature extraction and risk scoring
+    
 ```
 
 ---
