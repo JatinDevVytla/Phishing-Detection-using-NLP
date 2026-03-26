@@ -35,10 +35,11 @@ phishing-extension/
     ├── url_analyzer.py         # URL feature extraction and risk scoring
     ├── requirements.txt        # Python dependencies
     └── trained_model/
-        ├── main.py                 # FastAPI app, /analyze and /health endpoints
-        ├── model.py                # DistilBERT inference pipeline
-        ├── preprocessor.py         # Text cleaning, urgency scoring, NER
-        ├── url_analyzer.py         # URL feature extraction and risk scoring
+        ├── config.json
+        ├── tokenizer.json
+        ├── tokenizer_config.json
+        ├── training_args.bin
+        └── model.safetensors
     
 ```
 
